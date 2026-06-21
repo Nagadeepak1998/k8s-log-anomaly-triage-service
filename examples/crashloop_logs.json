@@ -1,0 +1,23 @@
+[
+  {
+    "timestamp": "2026-06-21T09:00:01Z",
+    "namespace": "ml-platform",
+    "pod": "embedding-api-66b6d7b9f4-xnr2q",
+    "container": "api",
+    "message": "CrashLoopBackOff: back-off restarting failed container"
+  },
+  {
+    "timestamp": "2026-06-21T09:00:05Z",
+    "namespace": "ml-platform",
+    "pod": "embedding-api-66b6d7b9f4-xnr2q",
+    "container": "api",
+    "message": "container terminated with exit code 1 after loading config"
+  },
+  {
+    "timestamp": "2026-06-21T09:00:12Z",
+    "namespace": "ml-platform",
+    "pod": "embedding-api-66b6d7b9f4-xnr2q",
+    "container": "api",
+    "message": "readiness probe failed: connection refused"
+  }
+]

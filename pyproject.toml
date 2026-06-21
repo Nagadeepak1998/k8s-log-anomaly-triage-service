@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "k8s-log-anomaly-triage-service"
+version = "0.1.0"
+description = "Kubernetes log anomaly triage service with API, CLI, Prometheus metrics, and deployment manifests."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.111,<1.0",
+  "uvicorn[standard]>=0.30,<1.0",
+  "pydantic>=2.7,<3.0",
+  "prometheus-client>=0.20,<1.0",
+  "python-json-logger>=2.0,<3.0"
+]
+
+[project.optional-dependencies]
+dev = [
+  "httpx>=0.27,<1.0",
+  "pytest>=8.2,<9.0",
+  "ruff>=0.5,<1.0"
+]
+
+[project.scripts]
+k8s-log-triage = "k8s_log_anomaly_triage_service.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
