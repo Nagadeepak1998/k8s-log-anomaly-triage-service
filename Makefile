@@ -1,4 +1,4 @@
-.PHONY: setup test lint run smoke docker-build
+.PHONY: setup test lint run smoke replay-report docker-build
 
 setup:
 	python3 -m venv .venv
@@ -14,7 +14,10 @@ run:
 	. .venv/bin/activate && uvicorn k8s_log_anomaly_triage_service.app:app --host 0.0.0.0 --port 8000
 
 smoke:
-	. .venv/bin/activate && k8s-log-triage examples/crashloop_logs.json --service embedding-api --environment staging --fail-at 90
+	. .venv/bin/activate && PYTHONPATH=src python -m k8s_log_anomaly_triage_service.cli examples/crashloop_logs.json --service embedding-api --environment staging --fail-at 90
+
+replay-report:
+	. .venv/bin/activate && PYTHONPATH=src python -m k8s_log_anomaly_triage_service.cli replay examples/replay_manifest.json --markdown reports/replay_review.md; rc=$$?; if [ $$rc -eq 1 ]; then echo "expected page decision"; exit 0; fi; exit $$rc
 
 docker-build:
 	docker build -t k8s-log-anomaly-triage-service:local .

@@ -21,6 +21,11 @@ TRIAGE_RISK_SCORE = Histogram(
     "Distribution of triage risk scores.",
     buckets=(0, 10, 25, 50, 75, 90, 100),
 )
+REPLAY_REVIEWS = Counter(
+    "k8s_log_replay_reviews_total",
+    "Total replay reviews by status.",
+    ["status", "dominant_incident_class"],
+)
 HTTP_LATENCY = Histogram(
     "http_request_duration_seconds",
     "HTTP request latency.",

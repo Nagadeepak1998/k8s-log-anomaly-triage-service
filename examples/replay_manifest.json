@@ -1,0 +1,69 @@
+{
+  "incident_id": "embedding-api-2026-07-08-replay",
+  "owner": "ml-platform-oncall",
+  "windows": [
+    {
+      "window_id": "00-baseline",
+      "service": "embedding-api",
+      "environment": "staging",
+      "logs": [
+        {
+          "timestamp": "2026-07-08T09:00:00Z",
+          "namespace": "ml-platform",
+          "pod": "embedding-api-658d76f7f4-q7j2m",
+          "container": "api",
+          "message": "request completed successfully for health probe"
+        }
+      ]
+    },
+    {
+      "window_id": "01-dependency-warnings",
+      "service": "embedding-api",
+      "environment": "staging",
+      "logs": [
+        {
+          "timestamp": "2026-07-08T09:05:00Z",
+          "namespace": "ml-platform",
+          "pod": "embedding-api-658d76f7f4-q7j2m",
+          "container": "api",
+          "message": "context deadline exceeded calling vector-db"
+        },
+        {
+          "timestamp": "2026-07-08T09:05:04Z",
+          "namespace": "ml-platform",
+          "pod": "embedding-api-658d76f7f4-q7j2m",
+          "container": "api",
+          "message": "upstream vector-db unavailable after retry budget exhausted"
+        }
+      ]
+    },
+    {
+      "window_id": "02-crashloop-page",
+      "service": "embedding-api",
+      "environment": "staging",
+      "logs": [
+        {
+          "timestamp": "2026-07-08T09:10:00Z",
+          "namespace": "ml-platform",
+          "pod": "embedding-api-658d76f7f4-q7j2m",
+          "container": "api",
+          "message": "CrashLoopBackOff: back-off restarting failed container"
+        },
+        {
+          "timestamp": "2026-07-08T09:10:03Z",
+          "namespace": "ml-platform",
+          "pod": "embedding-api-658d76f7f4-q7j2m",
+          "container": "api",
+          "message": "container terminated with exit code 1 after loading model config"
+        },
+        {
+          "timestamp": "2026-07-08T09:10:08Z",
+          "namespace": "ml-platform",
+          "pod": "embedding-api-658d76f7f4-q7j2m",
+          "container": "api",
+          "message": "Back-off restarting failed container after readiness probe failed"
+        }
+      ]
+    }
+  ]
+}

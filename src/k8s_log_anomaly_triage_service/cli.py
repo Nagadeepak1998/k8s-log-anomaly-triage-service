@@ -5,7 +5,9 @@ import json
 import sys
 from pathlib import Path
 
-from .models import LogEvent
+from .models import LogEvent, ReplayManifest
+from .replay import review_replay
+from .reporting import render_replay_markdown
 from .rules import triage_logs
 
 
@@ -16,6 +18,10 @@ def load_logs(path: Path) -> list[LogEvent]:
     if not isinstance(payload, list):
         raise ValueError("input must be a JSON list or an object with a logs array")
     return [LogEvent.model_validate(item) for item in payload]
+
+
+def load_replay_manifest(path: Path) -> ReplayManifest:
+    return ReplayManifest.model_validate_json(path.read_text())
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -32,7 +38,22 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def build_replay_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Review a multi-window Kubernetes log replay manifest.")
+    parser.add_argument("command", choices=["replay"])
+    parser.add_argument("input", type=Path, help="Path to replay manifest JSON.")
+    parser.add_argument("--page-at", type=float, default=90.0)
+    parser.add_argument("--watch-at", type=float, default=50.0)
+    parser.add_argument("--fail-at", choices=["watch", "page"], default="page")
+    parser.add_argument("--markdown", type=Path, help="Optional Markdown report output path.")
+    return parser
+
+
 def main(argv: list[str] | None = None) -> int:
+    argv = sys.argv[1:] if argv is None else argv
+    if argv and argv[0] == "replay":
+        return run_replay(argv)
+
     parser = build_parser()
     args = parser.parse_args(argv)
     try:
@@ -44,6 +65,25 @@ def main(argv: list[str] | None = None) -> int:
 
     print(result.model_dump_json(indent=2))
     return 1 if result.risk_score >= args.fail_at else 0
+
+
+def run_replay(argv: list[str]) -> int:
+    parser = build_replay_parser()
+    args = parser.parse_args(argv)
+    try:
+        manifest = load_replay_manifest(args.input)
+        result = review_replay(manifest, page_at=args.page_at, watch_at=args.watch_at)
+        if args.markdown:
+            args.markdown.parent.mkdir(parents=True, exist_ok=True)
+            args.markdown.write_text(render_replay_markdown(result))
+    except Exception as exc:  # pragma: no cover - argparse-facing error path
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+
+    print(result.model_dump_json(indent=2))
+    if args.fail_at == "watch" and result.status in {"watch", "page"}:
+        return 1
+    return 1 if result.status == "page" else 0
 
 
 if __name__ == "__main__":

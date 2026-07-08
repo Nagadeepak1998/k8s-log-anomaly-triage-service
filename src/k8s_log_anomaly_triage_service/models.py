@@ -5,6 +5,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 Severity = Literal["low", "medium", "high", "critical"]
+ReplayStatus = Literal["pass", "watch", "page"]
 
 
 class LogEvent(BaseModel):
@@ -39,3 +40,40 @@ class TriageResponse(BaseModel):
     findings: list[Finding]
     runbook_steps: list[str]
     metrics: dict[str, Any]
+
+
+class ReplayWindow(BaseModel):
+    window_id: str = Field(min_length=1)
+    service: str = Field(min_length=1)
+    environment: str = Field(min_length=1)
+    logs: list[LogEvent] = Field(min_length=1)
+
+
+class ReplayManifest(BaseModel):
+    incident_id: str = Field(min_length=1)
+    owner: str = Field(default="platform-oncall", min_length=1)
+    windows: list[ReplayWindow] = Field(min_length=1)
+
+
+class ReplayWindowResult(BaseModel):
+    window_id: str
+    service: str
+    environment: str
+    risk_score: float = Field(ge=0, le=100)
+    incident_class: str
+    findings: int = Field(ge=0)
+    summary: str
+
+
+class ReplayReviewResponse(BaseModel):
+    incident_id: str
+    owner: str
+    status: ReplayStatus
+    summary: str
+    reviewed_windows: int = Field(ge=0)
+    page_windows: int = Field(ge=0)
+    highest_risk_score: float = Field(ge=0, le=100)
+    dominant_incident_class: str
+    recurring_incident_classes: list[str]
+    windows: list[ReplayWindowResult]
+    recommended_actions: list[str]

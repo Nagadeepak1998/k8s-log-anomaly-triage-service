@@ -2,7 +2,7 @@
 
 Production-shaped Kubernetes log anomaly triage service for platform, SRE, DevOps, and MLOps workflows.
 
-The project scores Kubernetes log batches, identifies a likely incident class, returns evidence-backed runbook steps, exposes Prometheus metrics, and ships with tests, Docker, Kubernetes manifests, a Terraform skeleton, and CI documentation.
+The project scores Kubernetes log batches, identifies a likely incident class, replays multi-window incidents into Markdown triage reports, exposes Prometheus metrics, and ships with tests, Docker, Kubernetes manifests, a Terraform skeleton, and CI documentation.
 
 ## Business Problem
 
@@ -18,6 +18,9 @@ flowchart LR
     C --> D
     D --> E[Incident class + risk score]
     D --> F[Runbook steps]
+    A --> L[Replay manifest]
+    L --> M[CLI/API replay review]
+    M --> N[Markdown incident report]
     C --> G[/metrics Prometheus]
     C --> H[Structured JSON logs]
     C --> I[Docker image]
@@ -59,6 +62,23 @@ k8s-log-triage examples/crashloop_logs.json \
 
 The CLI returns non-zero when the risk score is greater than or equal to `--fail-at`, which makes it useful as a CI or release-gate check.
 
+## Replay Review
+
+The replay mode reviews multiple dated log windows and writes an incident-ready Markdown report:
+
+```bash
+make replay-report
+```
+
+Direct CLI usage:
+
+```bash
+k8s-log-triage replay examples/replay_manifest.json \
+  --markdown reports/replay_review.md
+```
+
+The sample replay intentionally returns `page` because the final window reproduces a crash loop. `make replay-report` treats that non-zero CLI result as expected and leaves the report at `reports/replay_review.md`.
+
 ## Run the API Locally
 
 ```bash
@@ -77,6 +97,14 @@ Triage request:
 curl -X POST http://localhost:8000/triage \
   -H "Content-Type: application/json" \
   -d @<(jq -n --slurpfile logs examples/crashloop_logs.json '{service:"embedding-api", environment:"staging", logs:$logs[0]}')
+```
+
+Replay request:
+
+```bash
+curl -X POST http://localhost:8000/replay \
+  -H "Content-Type: application/json" \
+  -d @examples/replay_manifest.json
 ```
 
 Prometheus metrics:
@@ -142,6 +170,7 @@ git push origin main
 ## Observability
 
 - `/metrics` exposes Prometheus-compatible counters and histograms.
+- Replay reviews emit `k8s_log_replay_reviews_total{status,dominant_incident_class}`.
 - Structured JSON logs include service, environment, incident class, risk score, and log event count.
 - Raw credentials are not required and no secrets are stored in the repository.
 
@@ -158,6 +187,7 @@ git push origin main
 **DevOps and SRE**
 
 - Kubernetes incident triage thinking.
+- Multi-window replay review for recurring failure patterns.
 - Docker and Docker Compose runtime.
 - Kubernetes manifests with health probes, resources, metrics annotations, and security context.
 - Terraform skeleton for cloud deployment support.

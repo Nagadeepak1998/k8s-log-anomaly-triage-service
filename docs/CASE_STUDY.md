@@ -15,17 +15,29 @@ This project implements a deterministic triage layer for common Kubernetes failu
 - authorization or secret issues
 - data and schema mismatches
 
-The service exposes the same logic through a FastAPI endpoint and a CLI so it can run in CI, a support workflow, or an internal platform tool.
+The service exposes the same logic through a FastAPI endpoint and a CLI so it can run in CI, a support workflow, or an internal platform tool. It also includes a replay reviewer that evaluates multiple incident windows and produces a Markdown triage report for handoff or incident notes.
 
 ## Production-Shaped Details
 
 - Typed request and response contracts with Pydantic.
 - Prometheus counters and histograms for request volume, risk scores, and HTTP latency.
+- Replay review metrics for incident windows and page/watch/pass outcomes.
 - Structured JSON logs for triage outcomes without storing secrets.
 - Kubernetes manifests with probes, resource limits, Prometheus scrape annotations, and a restricted container security context.
 - Terraform skeleton for ECR and CloudWatch log resources.
-- Tests covering rule scoring, low-signal logs, API behavior, metrics, and CLI failure thresholds.
+- Tests covering rule scoring, low-signal logs, API behavior, replay review behavior, metrics, Markdown reports, and CLI failure thresholds.
 - CI workflow stored under `docs/github-actions/ci.yml` because the current GitHub token may not have workflow scope.
+
+## Recruiter-Readable Upgrade
+
+The July 8 upgrade added a deterministic incident replay gate:
+
+- `examples/replay_manifest.json` models a clean baseline, dependency warnings, and a final crash-loop page window.
+- `k8s-log-triage replay ...` returns `pass`, `watch`, or `page` and can write `reports/replay_review.md`.
+- `POST /replay` provides API parity for the same review.
+- `k8s_log_replay_reviews_total{status,dominant_incident_class}` makes replay outcomes observable.
+
+This turns the repo from a single-batch classifier into a small production-support workflow: responders can review whether symptoms are recurring, identify the dominant failure class, and hand off a concise report.
 
 ## Tradeoffs
 

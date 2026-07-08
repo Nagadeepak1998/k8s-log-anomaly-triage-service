@@ -34,6 +34,49 @@ def test_api_triage_and_metrics():
     assert "k8s_log_triage_requests_total" in metrics.text
 
 
+def test_api_replay_review_and_metrics():
+    client = TestClient(app)
+    response = client.post(
+        "/replay",
+        json={
+            "incident_id": "incident-123",
+            "owner": "platform-oncall",
+            "windows": [
+                {
+                    "window_id": "crashloop",
+                    "service": "ranker-api",
+                    "environment": "staging",
+                    "logs": [
+                        {
+                            "namespace": "ml",
+                            "pod": "ranker-1",
+                            "message": "CrashLoopBackOff: back-off restarting failed container",
+                        },
+                        {
+                            "namespace": "ml",
+                            "pod": "ranker-1",
+                            "message": "container exited with exit code 1",
+                        },
+                        {
+                            "namespace": "ml",
+                            "pod": "ranker-1",
+                            "message": "Back-off restarting failed container",
+                        },
+                    ],
+                }
+            ],
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "page"
+    assert body["dominant_incident_class"] == "crash_loop"
+
+    metrics = client.get("/metrics")
+    assert "k8s_log_replay_reviews_total" in metrics.text
+
+
 def test_cli_returns_nonzero_when_risk_exceeds_threshold(tmp_path, capsys):
     path = tmp_path / "logs.json"
     path.write_text(
@@ -53,3 +96,47 @@ def test_cli_returns_nonzero_when_risk_exceeds_threshold(tmp_path, capsys):
     captured = capsys.readouterr()
     assert exit_code == 1
     assert "crash_loop" in captured.out
+
+
+def test_cli_replay_writes_markdown_report(tmp_path, capsys):
+    path = tmp_path / "replay.json"
+    report = tmp_path / "report.md"
+    path.write_text(
+        json.dumps(
+            {
+                "incident_id": "incident-123",
+                "owner": "platform-oncall",
+                "windows": [
+                    {
+                        "window_id": "crashloop",
+                        "service": "ranker-api",
+                        "environment": "staging",
+                        "logs": [
+                            {
+                                "namespace": "ml",
+                                "pod": "ranker-1",
+                                "message": "CrashLoopBackOff: back-off restarting failed container",
+                            },
+                            {
+                                "namespace": "ml",
+                                "pod": "ranker-1",
+                                "message": "container exited with exit code 1",
+                            },
+                            {
+                                "namespace": "ml",
+                                "pod": "ranker-1",
+                                "message": "Back-off restarting failed container",
+                            },
+                        ],
+                    }
+                ],
+            }
+        )
+    )
+
+    exit_code = main(["replay", str(path), "--markdown", str(report)])
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert '"status": "page"' in captured.out
+    assert "Kubernetes Log Replay Review" in report.read_text()

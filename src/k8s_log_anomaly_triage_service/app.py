@@ -4,14 +4,16 @@ import logging
 
 from fastapi import FastAPI
 
-from .models import TriageRequest, TriageResponse
+from .models import ReplayManifest, ReplayReviewResponse, TriageRequest, TriageResponse
 from .observability import (
     MetricsMiddleware,
+    REPLAY_REVIEWS,
     TRIAGE_REQUESTS,
     TRIAGE_RISK_SCORE,
     configure_logging,
     metrics_response,
 )
+from .replay import review_replay
 from .rules import triage_logs
 
 configure_logging()
@@ -47,6 +49,26 @@ def triage(request: TriageRequest) -> TriageResponse:
             "incident_class": result.incident_class,
             "risk_score": result.risk_score,
             "log_events": len(request.logs),
+        },
+    )
+    return result
+
+
+@app.post("/replay", response_model=ReplayReviewResponse)
+def replay(request: ReplayManifest) -> ReplayReviewResponse:
+    result = review_replay(request)
+    REPLAY_REVIEWS.labels(
+        status=result.status,
+        dominant_incident_class=result.dominant_incident_class,
+    ).inc()
+    logger.info(
+        "replay_review_completed",
+        extra={
+            "incident_id": request.incident_id,
+            "owner": request.owner,
+            "status": result.status,
+            "reviewed_windows": result.reviewed_windows,
+            "highest_risk_score": result.highest_risk_score,
         },
     )
     return result
