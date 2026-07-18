@@ -29,9 +29,7 @@ def test_triage_returns_low_signal_when_no_rules_match():
 
 def test_dependency_timeout_groups_multiple_patterns():
     logs = [
-        LogEvent(
-            namespace="ops", pod="worker-1", message="context deadline exceeded calling redis"
-        ),
+        LogEvent(namespace="ops", pod="worker-1", message="context deadline exceeded calling redis"),
         LogEvent(namespace="ops", pod="worker-2", message="upstream model-service unavailable"),
     ]
 

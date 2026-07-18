@@ -34,12 +34,7 @@ RULES: tuple[Rule, ...] = (
         category="dependency_timeout",
         severity="high",
         weight=18,
-        patterns=(
-            r"timeout",
-            r"context deadline exceeded",
-            r"connection refused",
-            r"upstream .* unavailable",
-        ),
+        patterns=(r"timeout", r"context deadline exceeded", r"connection refused", r"upstream .* unavailable"),
         recommendation="Validate dependency health, service discovery, network policy, and retry budget.",
     ),
     Rule(
@@ -60,12 +55,7 @@ RULES: tuple[Rule, ...] = (
         category="data_or_schema",
         severity="medium",
         weight=11,
-        patterns=(
-            r"schema mismatch",
-            r"missing column",
-            r"deserialization error",
-            r"invalid payload",
-        ),
+        patterns=(r"schema mismatch", r"missing column", r"deserialization error", r"invalid payload"),
         recommendation="Compare producer and consumer versions and validate contract changes before rollback.",
     ),
 )
