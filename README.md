@@ -2,7 +2,7 @@
 
 Production-shaped Kubernetes log anomaly triage service for platform, SRE, DevOps, and MLOps workflows.
 
-The project scores Kubernetes log batches, identifies a likely incident class, replays multi-window incidents into Markdown triage reports, exposes Prometheus metrics, and ships with tests, Docker, Kubernetes manifests, a Terraform skeleton, and CI documentation.
+The project scores Kubernetes log batches, identifies a likely incident class, replays multi-window incidents, reviews anomaly trends across deployments, routes evidence to workload owners, exposes Prometheus metrics, and ships with tests, Docker, Kubernetes manifests, a Terraform skeleton, and CI documentation.
 
 ## Business Problem
 
@@ -21,6 +21,9 @@ flowchart LR
     A --> L[Replay manifest]
     L --> M[CLI/API replay review]
     M --> N[Markdown incident report]
+    A --> O[Deployment history]
+    O --> P[Trend review + owner routing]
+    P --> N
     C --> G[/metrics Prometheus]
     C --> H[Structured JSON logs]
     C --> I[Docker image]
@@ -78,6 +81,17 @@ k8s-log-triage replay examples/replay_manifest.json \
 ```
 
 The sample replay intentionally returns `page` because the final window reproduces a crash loop. `make replay-report` treats that non-zero CLI result as expected and leaves the report at `reports/replay_review.md`.
+
+## Cross-Deployment Trend Review
+
+Review repeated failure classes across releases and produce an owner-routed audit artifact:
+
+```bash
+make trends-report
+k8s-log-triage trends examples/deployment_trends.json --markdown reports/deployment_trends.md
+```
+
+The sample pages because `dependency_timeout` recurs across two deployments. Each anomaly is grouped into an owner route with affected services, failure classes, and highest risk. API parity is available at `POST /deployments/trends`.
 
 ## Run the API Locally
 
@@ -171,6 +185,7 @@ git push origin main
 
 - `/metrics` exposes Prometheus-compatible counters and histograms.
 - Replay reviews emit `k8s_log_replay_reviews_total{status,dominant_incident_class}`.
+- Deployment reviews emit `k8s_log_deployment_trend_reviews_total{status}`.
 - Structured JSON logs include service, environment, incident class, risk score, and log event count.
 - Raw credentials are not required and no secrets are stored in the repository.
 
@@ -188,6 +203,7 @@ git push origin main
 
 - Kubernetes incident triage thinking.
 - Multi-window replay review for recurring failure patterns.
+- Cross-deployment anomaly trends and workload-owner routing.
 - Docker and Docker Compose runtime.
 - Kubernetes manifests with health probes, resources, metrics annotations, and security context.
 - Terraform skeleton for cloud deployment support.

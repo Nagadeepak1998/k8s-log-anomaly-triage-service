@@ -77,3 +77,49 @@ class ReplayReviewResponse(BaseModel):
     recurring_incident_classes: list[str]
     windows: list[ReplayWindowResult]
     recommended_actions: list[str]
+
+
+class DeploymentWindow(BaseModel):
+    deployment_id: str = Field(min_length=1)
+    deployed_at: str = Field(min_length=1)
+    service: str = Field(min_length=1)
+    environment: str = Field(min_length=1)
+    owner: str | None = None
+    logs: list[LogEvent] = Field(min_length=1)
+
+
+class DeploymentTrendManifest(BaseModel):
+    review_id: str = Field(min_length=1)
+    default_owner: str | None = None
+    deployments: list[DeploymentWindow] = Field(min_length=1)
+
+
+class DeploymentTrendResult(BaseModel):
+    deployment_id: str
+    deployed_at: str
+    service: str
+    environment: str
+    owner: str
+    risk_score: float = Field(ge=0, le=100)
+    incident_class: str
+
+
+class OwnerRoute(BaseModel):
+    owner: str
+    services: list[str]
+    affected_deployments: int = Field(ge=0)
+    highest_risk_score: float = Field(ge=0, le=100)
+    incident_classes: list[str]
+
+
+class DeploymentTrendResponse(BaseModel):
+    review_id: str
+    status: ReplayStatus
+    summary: str
+    reviewed_deployments: int = Field(ge=0)
+    anomalous_deployments: int = Field(ge=0)
+    unowned_deployments: int = Field(ge=0)
+    recurring_incident_classes: list[str]
+    deployments: list[DeploymentTrendResult]
+    owner_routes: list[OwnerRoute]
+    recommended_actions: list[str]

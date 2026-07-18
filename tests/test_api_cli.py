@@ -140,3 +140,36 @@ def test_cli_replay_writes_markdown_report(tmp_path, capsys):
     assert exit_code == 1
     assert '"status": "page"' in captured.out
     assert "Kubernetes Log Replay Review" in report.read_text()
+
+
+def test_api_and_cli_deployment_trends(tmp_path, capsys):
+    payload = {
+        "review_id": "series",
+        "default_owner": "platform-oncall",
+        "deployments": [
+            {
+                "deployment_id": "api-1",
+                "deployed_at": "2026-07-17T00:00:00Z",
+                "service": "api",
+                "environment": "staging",
+                "logs": [{"message": "context deadline exceeded"}],
+            },
+            {
+                "deployment_id": "api-2",
+                "deployed_at": "2026-07-18T00:00:00Z",
+                "service": "api",
+                "environment": "staging",
+                "logs": [{"message": "upstream model unavailable"}],
+            },
+        ],
+    }
+    client = TestClient(app)
+    response = client.post("/deployments/trends", json=payload)
+    assert response.status_code == 200
+    assert response.json()["status"] == "page"
+    assert "k8s_log_deployment_trend_reviews_total" in client.get("/metrics").text
+    source, report = tmp_path / "trends.json", tmp_path / "trends.md"
+    source.write_text(json.dumps(payload))
+    assert main(["trends", str(source), "--markdown", str(report)]) == 1
+    assert '"status": "page"' in capsys.readouterr().out
+    assert "Deployment Anomaly Trend Review" in report.read_text()

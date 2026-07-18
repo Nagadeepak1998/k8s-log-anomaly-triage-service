@@ -33,9 +33,7 @@ def review_replay(
         )
 
     class_counts = Counter(
-        window.incident_class
-        for window in windows
-        if window.incident_class != "no_clear_anomaly"
+        window.incident_class for window in windows if window.incident_class != "no_clear_anomaly"
     )
     highest_risk = max((window.risk_score for window in windows), default=0.0)
     page_windows = sum(1 for window in windows if is_page_window(window, page_at))
@@ -127,6 +125,10 @@ def build_recommended_actions(
             f"Treat repeated {', '.join(recurring_classes)} evidence as a pattern, not a single noisy log."
         )
     elif dominant_class != "no_clear_anomaly":
-        actions.append(f"Start with the `{dominant_class}` runbook and confirm the newest failure window.")
-    actions.append("Document the decision, mitigations, and rollback criteria in the incident record.")
+        actions.append(
+            f"Start with the `{dominant_class}` runbook and confirm the newest failure window."
+        )
+    actions.append(
+        "Document the decision, mitigations, and rollback criteria in the incident record."
+    )
     return actions

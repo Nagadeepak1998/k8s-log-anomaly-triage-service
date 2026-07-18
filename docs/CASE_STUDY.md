@@ -15,13 +15,14 @@ This project implements a deterministic triage layer for common Kubernetes failu
 - authorization or secret issues
 - data and schema mismatches
 
-The service exposes the same logic through a FastAPI endpoint and a CLI so it can run in CI, a support workflow, or an internal platform tool. It also includes a replay reviewer that evaluates multiple incident windows and produces a Markdown triage report for handoff or incident notes.
+The service exposes the same logic through a FastAPI endpoint and a CLI so it can run in CI, a support workflow, or an internal platform tool. It includes a replay reviewer for incident windows and a deployment-trend reviewer that detects repeated failure classes across releases, then groups evidence by accountable workload owner.
 
 ## Production-Shaped Details
 
 - Typed request and response contracts with Pydantic.
 - Prometheus counters and histograms for request volume, risk scores, and HTTP latency.
 - Replay review metrics for incident windows and page/watch/pass outcomes.
+- Deployment-trend metrics and owner-routed Markdown review evidence.
 - Structured JSON logs for triage outcomes without storing secrets.
 - Kubernetes manifests with probes, resource limits, Prometheus scrape annotations, and a restricted container security context.
 - Terraform skeleton for ECR and CloudWatch log resources.
@@ -38,6 +39,8 @@ The July 8 upgrade added a deterministic incident replay gate:
 - `k8s_log_replay_reviews_total{status,dominant_incident_class}` makes replay outcomes observable.
 
 This turns the repo from a single-batch classifier into a small production-support workflow: responders can review whether symptoms are recurring, identify the dominant failure class, and hand off a concise report.
+
+The July 18 upgrade adds `k8s-log-triage trends` and `POST /deployments/trends`. A deterministic deployment history distinguishes a clean baseline from recurring dependency timeouts and a separate memory-pressure event, then routes affected services to declared on-call owners. Missing ownership or a recurring incident class creates a page decision, making accountability part of release readiness.
 
 ## Tradeoffs
 

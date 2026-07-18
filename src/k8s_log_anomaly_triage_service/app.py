@@ -4,8 +4,16 @@ import logging
 
 from fastapi import FastAPI
 
-from .models import ReplayManifest, ReplayReviewResponse, TriageRequest, TriageResponse
+from .models import (
+    DeploymentTrendManifest,
+    DeploymentTrendResponse,
+    ReplayManifest,
+    ReplayReviewResponse,
+    TriageRequest,
+    TriageResponse,
+)
 from .observability import (
+    DEPLOYMENT_TREND_REVIEWS,
     MetricsMiddleware,
     REPLAY_REVIEWS,
     TRIAGE_REQUESTS,
@@ -15,6 +23,7 @@ from .observability import (
 )
 from .replay import review_replay
 from .rules import triage_logs
+from .trends import review_deployment_trends
 
 configure_logging()
 logger = logging.getLogger(__name__)
@@ -69,6 +78,22 @@ def replay(request: ReplayManifest) -> ReplayReviewResponse:
             "status": result.status,
             "reviewed_windows": result.reviewed_windows,
             "highest_risk_score": result.highest_risk_score,
+        },
+    )
+    return result
+
+
+@app.post("/deployments/trends", response_model=DeploymentTrendResponse)
+def deployment_trends(request: DeploymentTrendManifest) -> DeploymentTrendResponse:
+    result = review_deployment_trends(request)
+    DEPLOYMENT_TREND_REVIEWS.labels(status=result.status).inc()
+    logger.info(
+        "deployment_trend_review_completed",
+        extra={
+            "review_id": request.review_id,
+            "status": result.status,
+            "reviewed_deployments": result.reviewed_deployments,
+            "unowned_deployments": result.unowned_deployments,
         },
     )
     return result

@@ -5,10 +5,11 @@ import json
 import sys
 from pathlib import Path
 
-from .models import LogEvent, ReplayManifest
+from .models import DeploymentTrendManifest, LogEvent, ReplayManifest
 from .replay import review_replay
-from .reporting import render_replay_markdown
+from .reporting import render_deployment_trend_markdown, render_replay_markdown
 from .rules import triage_logs
+from .trends import review_deployment_trends
 
 
 def load_logs(path: Path) -> list[LogEvent]:
@@ -39,7 +40,9 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def build_replay_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Review a multi-window Kubernetes log replay manifest.")
+    parser = argparse.ArgumentParser(
+        description="Review a multi-window Kubernetes log replay manifest."
+    )
     parser.add_argument("command", choices=["replay"])
     parser.add_argument("input", type=Path, help="Path to replay manifest JSON.")
     parser.add_argument("--page-at", type=float, default=90.0)
@@ -53,6 +56,8 @@ def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
     if argv and argv[0] == "replay":
         return run_replay(argv)
+    if argv and argv[0] == "trends":
+        return run_trends(argv)
 
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -83,6 +88,25 @@ def run_replay(argv: list[str]) -> int:
     print(result.model_dump_json(indent=2))
     if args.fail_at == "watch" and result.status in {"watch", "page"}:
         return 1
+    return 1 if result.status == "page" else 0
+
+
+def run_trends(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(description="Review anomaly trends across deployments.")
+    parser.add_argument("command", choices=["trends"])
+    parser.add_argument("input", type=Path)
+    parser.add_argument("--markdown", type=Path)
+    args = parser.parse_args(argv)
+    try:
+        manifest = DeploymentTrendManifest.model_validate_json(args.input.read_text())
+        result = review_deployment_trends(manifest)
+        if args.markdown:
+            args.markdown.parent.mkdir(parents=True, exist_ok=True)
+            args.markdown.write_text(render_deployment_trend_markdown(result))
+    except Exception as exc:  # pragma: no cover - argparse-facing error path
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+    print(result.model_dump_json(indent=2))
     return 1 if result.status == "page" else 0
 
 

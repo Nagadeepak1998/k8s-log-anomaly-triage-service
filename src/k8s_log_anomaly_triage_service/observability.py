@@ -26,6 +26,11 @@ REPLAY_REVIEWS = Counter(
     "Total replay reviews by status.",
     ["status", "dominant_incident_class"],
 )
+DEPLOYMENT_TREND_REVIEWS = Counter(
+    "k8s_log_deployment_trend_reviews_total",
+    "Total cross-deployment trend reviews.",
+    ["status"],
+)
 HTTP_LATENCY = Histogram(
     "http_request_duration_seconds",
     "HTTP request latency.",

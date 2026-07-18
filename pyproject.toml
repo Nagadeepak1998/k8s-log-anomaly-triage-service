@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "k8s-log-anomaly-triage-service"
-version = "0.1.0"
+version = "0.2.0"
 description = "Kubernetes log anomaly triage service with API, CLI, Prometheus metrics, and deployment manifests."
 readme = "README.md"
 requires-python = ">=3.11"
